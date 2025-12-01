@@ -1,0 +1,8 @@
+module load singularity
+singularity pull hpc-benchmarks:24.03.sif docker://nvcr.io/nvidia/hpc-benchmarks:24.03
+singularity run --bind $PWD:/home_pwd hpc-benchmarks\:24.03.sif bash
+#Singularity> cd /workspace
+#Singularity> cp hpcg.sh /home_pwd/
+#Singularity> cp /workspace/hpcg-linux-x86_64/sample-dat/hpcg.dat
+/home_pwd/
+#Singularity> exit

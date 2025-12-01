@@ -1,0 +1,5 @@
+
+mkdir $(hostname)
+cd $(hostname)
+python3 ../slurm.py
+echo "try bash submit_sweep"
