@@ -1,8 +1,13 @@
-module load singularity
+module load gcc/14.2.0-cuda-jeua
+# gcc/14.2.0-a75l # or this
+ #gcc/14.2.0-j33x # or this
+module load apptainer
+mkdir workspace
 singularity pull hpc-benchmarks:24.03.sif docker://nvcr.io/nvidia/hpc-benchmarks:24.03
 singularity run --bind $PWD:/home_pwd hpc-benchmarks\:24.03.sif bash
+tail -n 4 setup | sed 's/#Singularity>//g' > containersetup
 #Singularity> cd /workspace
 #Singularity> cp hpcg.sh /home_pwd/
-#Singularity> cp /workspace/hpcg-linux-x86_64/sample-dat/hpcg.dat
-/home_pwd/
+#Singularity> cp /workspace/hpcg-linux-x86_64/sample-dat/hpcg.dat/home_pwd/
 #Singularity> exit
+
