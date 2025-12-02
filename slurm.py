@@ -159,7 +159,8 @@ def write_ahmdal_gpu_sweep():
     for ngpus in gpus:
       for nprocs in procs:
         filename = '-'.join( ['ahmdal_gpu',str(index)] )
-        header= [sbatch_s('H100', arg='--partition'),
+        header= ["#!/bin/bash",
+                sbatch_s('h100', arg='--partition'),
                 sbatch_s(nnodes, arg='--nodes'),
                 sbatch_s(ngpus, arg = '--gpus-per-node'),
                 sbatch_s(nprocs, arg = '--ntasks-per-node'),
@@ -178,7 +179,7 @@ def write_ahmdal_gpu_sweep():
                  '--container-mounts="${MOUNT}"',
                  './hpcg.sh --nx 512 --ny 512 --nz 256 --rt 2 --mem-affinity 0:0:1:1']
         write_slurm_script(filename,
-                     header='\n'.join(['\n'] + header+ ['\n']),
+                     header='\n'.join( header+ ['\n']),
                      setup='\n'.join(['\n'] + setup + ['\n']),
                      workload=' '.join(workload),
                      postprocess = mod_postprocess())
