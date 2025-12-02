@@ -135,12 +135,56 @@ def mod_workload(launcher = 'srun --mpi=pmi2',
                  datadir = '$SLURM_SUBMIT_DIR',
                  inputfile = 'hpcg.dat'):
 
-  return f'\n{launcher} singularity run --nv --bind {hostdir}:{datadir} hpc-benchmarks\:24.03.sif ./hpcg.sh --dat {inputfile}'
+  return f'\n{launcher} singularity run --nv --bind {hostdir}:{datadir} hpc-benchmarks\:25.09.sif ./hpcg.sh --dat {inputfile}'
 
 def mod_postprocess():
   postprocess = 'mv slurm-$SLURM_JOB_ID.out $SLURM_SUBMIT_DIR/$SLURM_JOB_ID'
   return '\n'.join(['\n']+[postprocess, '\n'])
 
+
+
+def write_submit_sweep(count,sweepname ="submit_sweep",filename = fname):
+  lines = [ f"sbatch {filename}-{i}" for i in range(count)]
+  with open(sweepname, 'w') as f:
+    f.writelines('\n'.join(lines) )
+      
+
+
+def write_ahmdal_gpu_sweep():
+  nodes = [1,2]
+  gpus = [1,2]
+  procs = [1,2,4]
+  index = 0
+  for nnodes in nodes:
+    for ngpus in gpus:
+      for nprocs in procs:
+        filename = '-'.join( ['ahmdal_gpu',str(index)] )
+        header= [sbatch_s('H100', arg='--partition'),
+                sbatch_s(nnodes, arg='--nodes'),
+                sbatch_s(ngpus, arg = '--gpus-per-node'),
+                sbatch_s(nprocs, arg = '--ntasks-per-node'),
+                sbatch_s('32GB', arg = '--mem'),
+                sbatch_s('00:10:00', arg = '--time')]
+
+  
+        setup = ['\n',
+          'mkdir $SLURM_JOB_ID',
+          f"mv {filename} $SLURM_SUBMIT_DIR/$SLURM_JOB_ID/",
+          "CONT='nvcr.io/nvidia/hpc-benchmarks:25.09'",
+          'MOUNT=".:/my-dat-files"']
+        N = nnodes * nprocs
+        workload = [f'srun -N {N} --mpi=pmix',
+                 '--container-image="${CONT}"',
+                 '--container-mounts="${MOUNT}"',
+                 './hpcg.sh --nx 512 --ny 512 --nz 256 --rt 2 --mem-affinity 0:0:1:1']
+        write_slurm_script(filename,
+                     header='\n'.join(['\n'] + header+ ['\n']),
+                     setup='\n'.join(['\n'] + setup + ['\n']),
+                     workload=' '.join(workload),
+                     postprocess = mod_postprocess())
+
+        index +=1
+  write_submit_sweep(index,'submit_ahmdal_gpu',filename='ahmdal_gpu')
 
 """
 write a bunch of related sbatch scripts
@@ -162,11 +206,6 @@ def write_parameter_sweep():
         index += 1
   return index
 
-def write_submit_sweep(count,sweepname ="submit_sweep"):
-  lines = [ f"sbatch {fname}-{i}" for i in range(count)]
-  with open(sweepname, 'w') as f:
-    f.writelines('\n'.join(lines) )
-      
 if __name__ == '__main__':
   write_submit_sweep( write_parameter_sweep() )
 
