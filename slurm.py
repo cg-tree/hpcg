@@ -171,13 +171,18 @@ def write_ahmdal_gpu_sweep():
         setup = ['\n',
           'mkdir $SLURM_JOB_ID',
           f"mv {filename} $SLURM_SUBMIT_DIR/$SLURM_JOB_ID/",
-          "CONT='nvcr.io/nvidia/hpc-benchmarks:25.09'",
+          "CONT='hpc-benchmarks:25.09.sif'",
           'MOUNT=".:/my-dat-files"']
         N = nnodes * nprocs
-        workload = [f'srun -N {N} --mpi=pmix',
-                 '--container-image="${CONT}"',
-                 '--container-mounts="${MOUNT}"',
-                 './hpcg.sh --nx 512 --ny 512 --nz 256 --rt 2 --mem-affinity 0:0:1:1']
+        workload = ['srun singularity exec --nv --bind',
+                "${SLURM_SUBMIT_DIR}:/my-dat-files",
+                "$CONT" ,
+                'bash -c "cd /workspace && ./hpcg.sh --nx 128 --ny 128 --nz 128 --rt 60 --mem-affinity 0:0:1:1"']
+
+        #workload = [f'srun -N {N} --mpi=pmix',
+        #        '--container-image="${CONT}"',
+        #         '--container-mounts="${MOUNT}"',
+        #         './hpcg.sh --nx 512 --ny 512 --nz 256 --rt 2 --mem-affinity 0:0:1:1']
         write_slurm_script(filename,
                      header='\n'.join( header+ ['\n']),
                      setup='\n'.join(['\n'] + setup + ['\n']),
