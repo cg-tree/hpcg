@@ -151,7 +151,7 @@ def write_submit_sweep(count,sweepname ="submit_sweep",filename = fname):
 
 
 def write_ahmdal_gpu_sweep():
-  nodes = [1,2]
+  nodes = [1,2,3,4]
   gpus = [1,2]
   procs = [1,2,4]
   index = 0
@@ -164,8 +164,10 @@ def write_ahmdal_gpu_sweep():
                 sbatch_s(nnodes, arg='--nodes'),
                 sbatch_s(ngpus, arg = '--gpus-per-node'),
                 sbatch_s(nprocs, arg = '--ntasks-per-node'),
+                sbatch_s(max(1,int(nprocs/2)), arg='--ntasks-per-socket'),
+                sbatch_s(min(2,nprocs), arg='--sockets-per-node'),
                 sbatch_s('32GB', arg = '--mem'),
-                sbatch_s('00:10:00', arg = '--time')]
+                sbatch_s('00:01:30', arg = '--time')]
 
   
         setup = ['\n',
@@ -174,7 +176,7 @@ def write_ahmdal_gpu_sweep():
           "CONT='hpc-benchmarks:25.09.sif'",
           'MOUNT=".:/my-dat-files"']
         N = nnodes * nprocs
-        workload = ['srun singularity exec --nv --bind',
+        workload = ['srun --mpi=pmi2 singularity exec --nv --bind',
                 "${SLURM_SUBMIT_DIR}:/my-dat-files",
                 "$CONT" ,
                 'bash -c "cd /workspace && ./hpcg.sh --nx 128 --ny 128 --nz 128 --rt 60 --mem-affinity 0:0:1:1"']
