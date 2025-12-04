@@ -217,7 +217,7 @@ def write_gustafson_gpu_sweep():
   gpus = [1,2]
   procs = [1,2]
   index = 0
-  n = (16,16,16)
+  n = (512,16,16)
   for nnodes in nodes:
     for ngpus in gpus:
       for nprocs in procs:
