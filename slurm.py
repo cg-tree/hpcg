@@ -242,7 +242,7 @@ def write_gustafson_gpu_sweep():
           'MOUNT=".:/my-dat-files"']
         N = nnodes * nprocs
         workload = ['srun --mpi=pmi2 singularity exec --nv --bind',
-                "${SLURM_SUBMIT-files",
+                "${SLURM_SUBMIT_DIR}:/my-dat-files",
                 "$CONT" ,
                 f'bash -c "cd /workspace && ./hpcg.sh --nx {n[0]} --ny {n[1]} --nz {n[2]} --rt 60 --mem-affinity 0:0:1:1"']
 
