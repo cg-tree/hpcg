@@ -194,6 +194,68 @@ def write_ahmdal_gpu_sweep():
         index +=1
   write_submit_sweep(index,'submit_ahmdal_gpu',filename='ahmdal_gpu')
 
+
+
+
+'''gustafson (nx_1*ny_1*nz_1)/p_1 = (nx_2*ny_2*nz_2)/p_2
+constant work per process
+let p_2 = 2*p_1
+'''
+def gustafson_next_size(nx,ny,nz):
+  mn = min(nx, ny, nz)
+  if nx == mn:
+    nx*=2
+  elif ny == mn:
+    ny*=2
+  else:
+    nz*=2
+  return (nx, ny, nz)
+
+
+def write_gustafson_gpu_sweep():
+  nodes = [1,2]
+  gpus = [1,2]
+  procs = [1,2]
+  index = 0
+  n = (16,16,16)
+  for nnodes in nodes:
+    for ngpus in gpus:
+      for nprocs in procs:
+        filename = '-'.join( ['gustafson_gpu',str(index)] )
+        ntasks = ngpus * nprocs
+        nsockets = min(2,ntasks)
+        header= ["#!/bin/bash",
+                sbatch_s('h100', arg='--partition'),
+                sbatch_s(nnodes, arg='--nodes'),
+                sbatch_s(ngpus, arg = '--gpus-per-node'),
+                sbatch_s(nprocs, arg = '--cpus-per-gpu'),
+                sbatch_s(int(ntasks/nsockets), arg='--ntasks-per-socket'),
+                sbatch_s(nsockets, arg='--sockets-per-node'),
+                sbatch_s('32GB', arg = '--mem'),
+                sbatch_s('00:01:30', arg = '--time')]
+
+  
+        setup = ['\n',
+          'mkdir $SLURM_JOB_ID',
+          f"mv {filename} $SLURM_SUBMIT_DIR/$SLURM_JOB_ID/",
+          "CONT='hpc-benchmarks:25.09.sif'",
+          'MOUNT=".:/my-dat-files"']
+        N = nnodes * nprocs
+        workload = ['srun --mpi=pmi2 singularity exec --nv --bind',
+                "${SLURM_SUBMIT-files",
+                "$CONT" ,
+                f'bash -c "cd /workspace && ./hpcg.sh --nx {n[0]} --ny {n[1]} --nz {n[2]} --rt 60 --mem-affinity 0:0:1:1"']
+
+        write_slurm_script(filename,
+                     header='\n'.join( header+ ['\n']),
+                     setup='\n'.join(['\n'] + setup + ['\n']),
+                     workload=' '.join(workload),
+                     postprocess = mod_postprocess())
+
+        n = gustafson_next_size(n[0],n[1],n[2])
+        index +=1
+  write_submit_sweep(index,'submit_gustafson_gpu',filename='gustafson_gpu')
+
 """
 write a bunch of related sbatch scripts
 """
@@ -215,5 +277,5 @@ def write_parameter_sweep():
   return index
 
 if __name__ == '__main__':
-  write_submit_sweep( write_parameter_sweep() )
+  write_submit_sweep( write_gustafson_gpu_sweep(),'submit_gustafson_gpu', filename='gustafson_gpu' )
 
